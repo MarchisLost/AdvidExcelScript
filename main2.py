@@ -18,7 +18,7 @@ distinct_values = {}
 for row in ws.iter_rows(min_col=ws[Geocodigo][0].column, max_col=ws[Geocodigo][0].column, min_row=2, values_only=False):
     cell_value = row[0].value
     row_num = row[0].row
-    
+
     # Skip null (None) values in the distinct column
     if cell_value is None:
         continue
