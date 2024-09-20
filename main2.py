@@ -6,8 +6,8 @@ ws = wb['inter_106320750']
 
 # Specify the necessary columns
 Geocodigo = 'F'  # Distinct column
-Area_Int = 'M'  # Column to sum (Area_Int)
-Enq_Legal = 'L'  # Column to take a single value from (Enq_Legal)
+Area_Int_column = 'M'  # Column to sum (Area_Int_column)
+Enq_Legal_column = 'L'  # Column to take a single value from (Enq_Legal_column)
 area_cor_column = 'E'  # Column AREA_COR
 a_int_os_column = 'N'  # Column A_INT_OS
 
@@ -23,26 +23,26 @@ for row in ws.iter_rows(min_col=ws[Geocodigo][0].column, max_col=ws[Geocodigo][0
     if cell_value is None:
         continue
 
-    # Get the value from the first sum column (Area_Int) and the column Enq_Legal for the same row
-    sum_value_1 = ws[f'{Area_Int}{row_num}'].value
-    single_value = ws[f'{Enq_Legal}{row_num}'].value
+    # Get the value from the first sum column (Area_Int_column) and the column Enq_Legal_column for the same row
+    area_int = ws[f'{Area_Int_column}{row_num}'].value
+    enq_legal = ws[f'{Enq_Legal_column}{row_num}'].value
     area_cor_value = ws[f'{area_cor_column}{row_num}'].value
     a_int_os_value = ws[f'{a_int_os_column}{row_num}'].value
 
     # Initialize values if they are None
-    sum_value_1 = sum_value_1 if sum_value_1 is not None else 0
-    single_value = single_value if single_value is not None else 0
+    area_int = area_int if area_int is not None else 0
+    enq_legal = enq_legal if enq_legal is not None else 0
 
-    # If the distinct value already exists, append the row and continue summing column Area_Int
+    # If the distinct value already exists, append the row and continue summing column Area_Int_column
     if cell_value in distinct_values:
         distinct_values[cell_value]['rows'].append(row_num)
-        distinct_values[cell_value]['sum_1'] += sum_value_1
+        distinct_values[cell_value]['sum_1'] += area_int
     else:
-        # Initialize the entry with the row number, sum from column Area_Int, and the single value from Enq_Legal
+        # Initialize the entry with the row number, sum from column Area_Int_column, and the single value from Enq_Legal_column
         distinct_values[cell_value] = {
             'rows': [row_num],
-            'sum_1': sum_value_1,  # Sum of values from column Area_Int
-            'single_value': single_value,  # Take value from Enq_Legal (only from one row)
+            'sum_1': area_int,  # Sum of values from column Area_Int_column
+            'enq_legal': enq_legal,  # Take value from Enq_Legal_column (only from one row)
             'old_A_INT_OS': [],  # Store old A_INT_OS values
             'new_A_INT_OS': [],  # Store new A_INT_OS values
             'difference_left': 0  # Initialize remaining difference
@@ -53,7 +53,7 @@ for row in ws.iter_rows(min_col=ws[Geocodigo][0].column, max_col=ws[Geocodigo][0
 
 # Calculate the difference for each distinct value
 for value, data in distinct_values.items():
-    data['difference'] = round(data['single_value'] - data['sum_1'], 4)  # Subtract (b - a)
+    data['difference'] = round(data['enq_legal'] - data['sum_1'], 4)  # Subtract (b - a)
 
     # Distribute the difference to the rows
     remaining_difference = data['difference']
@@ -67,17 +67,19 @@ for value, data in distinct_values.items():
         # Add the smaller of remaining_difference or max_increase to A_INT_OS
         addition = min(remaining_difference, max_increase)
         new_value = round(a_int_os_value + addition, 4)
-        ws[f'{a_int_os_column}{row_num}'].value = new_value  # Update the cell
 
-        # Store the new value of A_INT_OS in the dictionary
+        # If no addition is made, keep the original value
+        if addition == 0:
+            new_value = a_int_os_value
+
+        # Update the cell value with the new value
+        ws[f'{a_int_os_column}{row_num}'].value = new_value
+
+        # Append the new or unchanged value to new_A_INT_OS list
         distinct_values[value]['new_A_INT_OS'].append(new_value)
 
         # Update the remaining difference after the addition
         remaining_difference -= addition
-
-        # If remaining_difference is 0, break the loop (no more rows need updating)
-        if remaining_difference <= 0:
-            break
 
     # Store any remaining difference in the dictionary
     data['difference_left'] = remaining_difference
@@ -85,6 +87,6 @@ for value, data in distinct_values.items():
 # Save the modified workbook
 wb.save('file_updated.xlsx')
 
-# Print the distinct values, their rows, sum of column Area_Int, the single value from Enq_Legal, old and new A_INT_OS values, and the remaining difference
+# Print the distinct values, their rows, sum of column Area_Int_column, the single value from Enq_Legal_column, old and new A_INT_OS values, and the remaining difference
 for value, data in distinct_values.items():
-    print(f"Geocodigo: {value}, Enq. Legal: {data['single_value']}, Sum: {data['sum_1']}, Difference: {data['difference']}, Old A_INT_OS: {data['old_A_INT_OS']}, New A_INT_OS: {data['new_A_INT_OS']}, Difference left: {data['difference_left']:.4f}")
+    print(f"Geo: {value}, Enq.Legal: {data['enq_legal']}, Sum: {data['sum_1']}, Diff: {data['difference']}, Old_A_INT_OS: {data['old_A_INT_OS']}, New_A_INT_OS: {data['new_A_INT_OS']}, Diff left: {data['difference_left']:.4f}")
