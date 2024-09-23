@@ -52,7 +52,7 @@ for row in ws.iter_rows(min_row=2):
             'sum_1': area_int,  # Sum of values from column Area_Int_column
             'enq_legal': enq_legal,  # Store Enq_Legal
             'old_A_INT_OS': [],  # Store old A_INT_OS values
-            'new_A_INT_OS': [],  # Store new A_INT_OS values
+            'n_A_INT_OS': [],  # Store new A_INT_OS values
             'Diff': 0,
             'Diff_left': 0,  # Initialize remaining difference
             'd_aio_ac': [],  # Store D_aio_ac values
@@ -94,15 +94,16 @@ for row in ws.iter_rows(min_row=2):
 
     # Add row data to the new list
     dict_final_results.append({
-        'row': row_num,
-        'geocodigo': geocodigo,
+        'Geo': geocodigo,
         'par_num_os': par_num_os,
-        'area_int': area_int,
-        'enq_legal': enq_legal,
+        'A_int': area_int,
+        'N_A_int': area_int,
+        'E_leg': enq_legal,
         'a_int_os': a_int_os,
-        'area_cor': area_cor,
+        'A_cor': area_cor,
         'd_aio_ac': d_aio_ac,
-        'Diff': difference  # Assign the calculated difference value
+        'Diff': difference,
+        'R_Diff': difference
     })
 
 # Count occurrences of each par_num_os
@@ -113,4 +114,19 @@ sorted_rows = sorted(dict_final_results, key=lambda x: par_num_os_counts[x['par_
 
 # Now, you can print or use the sorted_rows list
 for row_data in sorted_rows:
-    print(row_data)
+    # TODO Check if the sum of all area_int of that par_num_os is less or the same of the area_cor
+    # TODO Remove the diff for all of the same geocodigo
+    if row_data["Diff"] < row_data["d_aio_ac"]:
+        row_data["N_A_int"] = round(row_data["N_A_int"] + row_data["R_Diff"], 4)
+        row_data["R_Diff"] = 0
+    else:
+        row_data["N_A_int"] = round(row_data["N_A_int"] + row_data["d_aio_ac"], 4)
+        row_data["R_Diff"] = round(row_data["R_Diff"] - row_data["d_aio_ac"], 4)
+
+    # Update R_Diff for all rows with the same geocodigo
+    for other_row in sorted_rows:
+        if other_row['Geo'] == row_data['Geo']:
+            other_row['R_Diff'] = row_data["R_Diff"]
+
+    # Print all the columns
+    print(f"Geo: {row_data['Geo']}, Par_num_os: {row_data['par_num_os']}, A_int: {row_data['A_int']}, N_A_int: {row_data['N_A_int']}, E_leg: {row_data['E_leg']}, a_int_os: {row_data['a_int_os']}, A_cor: {row_data['A_cor']}, d_aio_ac: {row_data['d_aio_ac']}, Diff: {row_data['Diff']}, R_Diff: {row_data['R_Diff']}")
