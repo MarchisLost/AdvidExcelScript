@@ -23,7 +23,7 @@ for row in ws.iter_rows(min_row=2):
     geocodigo = ws[f'{Geocodigo}{row_num}'].value
     area_int = ws[f'{Area_Int_column}{row_num}'].value
     enq_legal = ws[f'{Enq_Legal_column}{row_num}'].value
-    area_value = ws[f'{Area_column}{row_num}'].value
+    area_value = ws[f'{Area_column}{row_num}'].value  # Get Area value (H)
     area_cor_value = ws[f'{area_cor_column}{row_num}'].value
     a_int_os_value = ws[f'{a_int_os_column}{row_num}'].value
 
@@ -61,7 +61,7 @@ for geocodigo, data in distinct_values.items():
     data['difference'] = round(data['enq_legal'] - data['sum_1'], 4)
 
 # Create a new variable to hold row-level data preserving the Excel row order
-dict_final_results = []
+rows_with_difference = []
 
 # Iterate through the rows again to build the new data structure
 for row in ws.iter_rows(min_row=2):
@@ -73,31 +73,29 @@ for row in ws.iter_rows(min_row=2):
     area_value = ws[f'{Area_column}{row_num}'].value  # Get Area value (H)
     a_int_os_value = ws[f'{a_int_os_column}{row_num}'].value
     area_cor_value = ws[f'{area_cor_column}{row_num}'].value
-
     # Skip null (None) values in the distinct column
     if geocodigo is None:
         continue
-
     # Get the difference value from distinct_values for this geocodigo
     difference = distinct_values[geocodigo]['difference']
 
     # Add row data to the new list
-    dict_final_results.append({
-        'row': row_num,
+    rows_with_difference.append({
+        'row_num': row_num,
         'geocodigo': geocodigo,
         'par_num_os': par_num_os,
         'area_int': area_int,
-        'enq_legal': enq_legal,
+        'enq_legal': enq_legal if enq_legal <= area_value else area_value,  # Ensure Enq_Legal is adjusted
         'a_int_os': a_int_os_value,
         'area_cor': area_cor_value,
-        'diff': difference  # Assign the calculated difference value
+        'difference': difference  # Assign the calculated difference value
     })
 
 # Count occurrences of each par_num_os
-par_num_os_counts = Counter(row['par_num_os'] for row in dict_final_results)
+par_num_os_counts = Counter(row['par_num_os'] for row in rows_with_difference)
 
 # Sort rows based on the count of par_num_os (those with fewer rows come first)
-sorted_rows = sorted(dict_final_results, key=lambda x: par_num_os_counts[x['par_num_os']])
+sorted_rows = sorted(rows_with_difference, key=lambda x: par_num_os_counts[x['par_num_os']])
 
 # Now, you can print or use the sorted_rows list
 for row_data in sorted_rows:
